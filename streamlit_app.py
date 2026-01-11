@@ -3,6 +3,7 @@
 # -----------------------------
 import streamlit as st
 from snowflake.snowpark.functions import col
+import requests
 
 # -----------------------------
 # App Header
@@ -23,7 +24,7 @@ cnx = st.connection("snowflake")
 session = cnx.session()
 
 # -----------------------------
-# Fruit Options
+# Fruit Options from Snowflake
 # -----------------------------
 fruit_df = (
     session
@@ -54,7 +55,7 @@ if ingredients_list:
 submit_order = st.button("Submit Order")
 
 # -----------------------------
-# Insert Order
+# Insert Order into Snowflake
 # -----------------------------
 if submit_order:
 
@@ -74,3 +75,17 @@ if submit_order:
             f"Your Smoothie is ordered, {name_on_order}!",
             icon="✅"
         )
+
+# -----------------------------
+# SmoothieFroot Nutrition Info
+# -----------------------------
+st.header("🥝 SmoothieFroot Nutrition Information")
+
+smoothiefroot_response = requests.get(
+    "https://my.smoothiefroot.com/api/fruit/watermelon"
+)
+
+st.dataframe(
+    data=smoothiefroot_response.json(),
+    use_container_width=True
+)
