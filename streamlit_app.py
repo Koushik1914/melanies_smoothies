@@ -4,89 +4,68 @@
 import streamlit as st
 from snowflake.snowpark.functions import col
 import requests
+import pandas as pd
 
 # -----------------------------
-# App Header
-# -----------------------------
-st.title(":cup_with_straw: Customize Your Smoothie! :cup_with_straw:")
-st.write("Choose the fruits you want in your custom Smoothie!")
-
-# -----------------------------
-# Name on Smoothie
-# -----------------------------
-name_on_order = st.text_input("Name on Smoothie:")
-st.write("The name on your Smoothie will be:", name_on_order)
-
-# -----------------------------
-# Snowflake Connection (SniS)
+# Snowflake Connection
 # -----------------------------
 cnx = st.connection("snowflake")
 session = cnx.session()
 
 # -----------------------------
-# Fruit Options from Snowflake
+# Load Fruit Options
 # -----------------------------
-fruit_df = (
+my_dataframe = (
     session
         .table("smoothies.public.fruit_options")
-        .select(col("FRUIT_NAME"))
+        .select(col("FRUIT_NAME"), col("SEARCH_ON"))
 )
 
+# Convert to Pandas
+pd_df = my_dataframe.to_pandas()
+
 # -----------------------------
-# Multiselect (max 5 fruits)
+# UI Inputs
 # -----------------------------
+name_on_order = st.text_input("Name on Smoothie:")
+
 ingredients_list = st.multiselect(
     "Choose up to 5 ingredients:",
-    fruit_df,
+    my_dataframe,
     max_selections=5
 )
 
 # -----------------------------
-# Build Ingredients String
+# Process Selected Fruits
 # -----------------------------
-ingredients_string = ""
-
 if ingredients_list:
+
+    ingredients_string = ""
+
     for fruit_chosen in ingredients_list:
+
         ingredients_string += fruit_chosen + " "
 
-        # -----------------------------
-        # SmoothieFroot Nutrition Info
-        # -----------------------------
+        search_on = pd_df.loc[
+            pd_df['FRUIT_NAME'] == fruit_chosen,
+            'SEARCH_ON'
+        ].iloc[0]
+
+        st.write(
+            'The search value for ',
+            fruit_chosen,
+            ' is ',
+            search_on,
+            '.'
+        )
+
         st.subheader(fruit_chosen + " Nutrition Information")
 
-        smoothiefroot_response = requests.get(
-            "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
+        response = requests.get(
+            "https://my.smoothiefroot.com/api/fruit/" + search_on
         )
 
         st.dataframe(
-            data=smoothiefroot_response.json(),
+            data=response.json(),
             use_container_width=True
-        )
-
-# -----------------------------
-# Submit Button
-# -----------------------------
-submit_order = st.button("Submit Order")
-
-# -----------------------------
-# Insert Order into Snowflake
-# -----------------------------
-if submit_order:
-
-    if not name_on_order or not ingredients_list:
-        st.error("Please enter a name and select at least one ingredient.")
-    else:
-        insert_stmt = f"""
-            INSERT INTO smoothies.public.orders
-                (ingredients, name_on_order)
-            VALUES
-                ('{ingredients_string.strip()}', '{name_on_order}')
-        """
-
-        session.sql(insert_stmt).collect()
-
-        st.success(
-            f"Your Smoothie is ordered, {name_on_order}!",
-            icon="✅"
         )
