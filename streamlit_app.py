@@ -24,7 +24,7 @@ cnx = st.connection("snowflake")
 session = cnx.session()
 
 # -----------------------------
-# Fruit Options
+# Fruit Options from Snowflake
 # -----------------------------
 fruit_df = (
     session
@@ -53,8 +53,10 @@ if ingredients_list:
         # -----------------------------
         # SmoothieFroot Nutrition Info
         # -----------------------------
+        st.subheader(fruit_chosen + " Nutrition Information")
+
         smoothiefroot_response = requests.get(
-            f"https://my.smoothiefroot.com/api/fruit/{fruit_chosen.lower()}"
+            "https://my.smoothiefroot.com/api/fruit/" + fruit_chosen
         )
 
         st.dataframe(
@@ -68,7 +70,7 @@ if ingredients_list:
 submit_order = st.button("Submit Order")
 
 # -----------------------------
-# Insert Order
+# Insert Order into Snowflake
 # -----------------------------
 if submit_order:
 
