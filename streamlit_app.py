@@ -24,7 +24,7 @@ cnx = st.connection("snowflake")
 session = cnx.session()
 
 # -----------------------------
-# Fruit Options from Snowflake
+# Fruit Options
 # -----------------------------
 fruit_df = (
     session
@@ -45,9 +45,22 @@ ingredients_list = st.multiselect(
 # Build Ingredients String
 # -----------------------------
 ingredients_string = ""
+
 if ingredients_list:
-    for fruit in ingredients_list:
-        ingredients_string += fruit + " "
+    for fruit_chosen in ingredients_list:
+        ingredients_string += fruit_chosen + " "
+
+        # -----------------------------
+        # SmoothieFroot Nutrition Info
+        # -----------------------------
+        smoothiefroot_response = requests.get(
+            f"https://my.smoothiefroot.com/api/fruit/{fruit_chosen.lower()}"
+        )
+
+        st.dataframe(
+            data=smoothiefroot_response.json(),
+            use_container_width=True
+        )
 
 # -----------------------------
 # Submit Button
@@ -55,7 +68,7 @@ if ingredients_list:
 submit_order = st.button("Submit Order")
 
 # -----------------------------
-# Insert Order into Snowflake
+# Insert Order
 # -----------------------------
 if submit_order:
 
@@ -75,17 +88,3 @@ if submit_order:
             f"Your Smoothie is ordered, {name_on_order}!",
             icon="✅"
         )
-
-# -----------------------------
-# SmoothieFroot Nutrition Info
-# -----------------------------
-st.header("🥝 SmoothieFroot Nutrition Information")
-
-smoothiefroot_response = requests.get(
-    "https://my.smoothiefroot.com/api/fruit/watermelon"
-)
-
-st.dataframe(
-    data=smoothiefroot_response.json(),
-    use_container_width=True
-)
